@@ -151,12 +151,11 @@ function execute_playbooks() {
 # Main script logic
 function main() {
     parse_arguments "$@"
-    validate_playbooks "${PLAYBOOKS[@]}"
 
-    initialize_os_env
     clone_repo
+    validate_playbooks "${PLAYBOOKS[@]}"
+    initialize_os_env
     install_brew_deps
-
     execute_playbooks "${PLAYBOOKS[@]}"
 }
 
