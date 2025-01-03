@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+# Constants
+declare -r CODER_PLAYBOOKS_REPO="https://github.com/howardkyu/coder-playbooks"
+declare -r CODER_PLAYBOOKS_PATH="/tmp/coder-playbooks"
+declare -r BRANCH_NAME="${BRANCH_NAME:-main}"
+
+# Functions
+function show_help() {
+    cat <<EOF
+Usage: ${0##*/} [OPTIONS] [PLAYBOOKS...]
+
+Options:
+  -h, --help         Show this help message and exit
+  -b, --branch BRANCH_NAME
+                     Specify the branch name to clone (default: main)
+
+Arguments:
+  PLAYBOOKS          List of playbook paths relative to 'playbooks/' to execute (optional)
+                     Example: 'kubernetes', 'docker/install'
+
+Description:
+This script initializes the environment, installs dependencies, clones the specified branch of the coder-playbooks repository, 
+and optionally executes the provided Ansible playbooks.
+EOF
+}
+
+function parse_arguments() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            -b|--branch)
+                if [[ -n "$2" && ! "$2" =~ ^- ]]; then
+                    BRANCH_NAME="$2"
+                    shift
+                else
+                    echo "Error: Missing value for --branch option" >&2
+                    exit 1
+                fi
+                ;;
+            --)
+                shift
+                break
+                ;;
+            -*|--*)
+                echo "Unknown option: $1" >&2
+                show_help
+                exit 1
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift
+    done
+    PLAYBOOKS=("$@")
+}
+
+function get_os_type() {
+    uname
+}
+
+function get_linux_distro() {
+    lsb_release -a 2>/dev/null | grep "Distributor ID" | awk -F':\t*' '{print $2}'
+}
+
+function initialize_os_linux() {
+    # Install brew
+    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+}
+
+function initialize_os_ubuntu() {
+    # Install brew's Ubuntu dependencies
+    sudo apt-get install -y build-essential
+}
+
+function initialize_os_env() {
+    local ostype
+    ostype="$(get_os_type)"
+
+    echo "Detected OS type as ${ostype}"
+    if [ "${ostype}" == "Linux" ]; then
+        initialize_os_linux
+
+        local linux_distro
+        linux_distro="$(get_linux_distro)"
+        echo "Detected Linux distro as ${linux_distro}"
+        if [ "${linux_distro}" == "Ubuntu" ]; then
+            initialize_os_ubuntu
+        else
+            echo "Invalid Linux distro: ${linux_distro}" >&2
+            exit 1
+        fi
+    else
+        echo "Invalid OS type: ${ostype}" >&2
+        exit 1
+    fi
+}
+
+function clone_repo() {
+    echo "Cloning repository from branch ${BRANCH_NAME}..."
+    rm -rf "${CODER_PLAYBOOKS_PATH}"
+    git clone --branch "${BRANCH_NAME}" "${CODER_PLAYBOOKS_REPO}" "${CODER_PLAYBOOKS_PATH}"
+}
+
+function install_brew_deps() {
+    echo "Installing brew dependencies..."
+    brew install ansible
+}
+
+function validate_playbooks() {
+    local playbooks=("$@")
+
+    if [ ${#playbooks[@]} -eq 0 ]; then
+        echo "No playbooks provided. Skipping playbook validation."
+        return
+    fi
+
+    echo "Validating playbooks..."
+    for playbook in "${playbooks[@]}"; do
+        local full_path="${CODER_PLAYBOOKS_PATH}/playbooks/${playbook}.yaml"
+        if [ ! -f "${full_path}" ]; then
+            echo "Playbook not found: ${playbook}" >&2
+            exit 1
+        fi
+    done
+    echo "All playbooks are valid."
+}
+
+function execute_playbooks() {
+    local playbooks=("$@")
+
+    if [ ${#playbooks[@]} -eq 0 ]; then
+        echo "No playbooks provided. Skipping playbook execution."
+        return
+    fi
+
+    for playbook in "${playbooks[@]}"; do
+        local full_path="${CODER_PLAYBOOKS_PATH}/playbooks/${playbook}.yaml"
+        echo "Executing playbook: ${full_path}"
+        ansible-playbook "${full_path}"
+    done
+}
+
+# Main script logic
+function main() {
+    parse_arguments "$@"
+    validate_playbooks "${PLAYBOOKS[@]}"
+
+    initialize_os_env
+    clone_repo
+    install_brew_deps
+
+    execute_playbooks "${PLAYBOOKS[@]}"
+}
+
+main "$@"

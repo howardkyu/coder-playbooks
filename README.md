@@ -12,5 +12,5 @@ To bootstrap the repository run the appropriate snippet in the terminal.
 - Configuration snippet of the Ubuntu environment
 
 ```console
-bash -c "$(wget -qO - https://raw.githubusercontent.com/howardkyu)"
+bash -c "$(wget -qO - https://raw.githubusercontent.com/howardkyu/coder-playbooks/refs/heads/main/bootstrap.sh) --help"
 ```
