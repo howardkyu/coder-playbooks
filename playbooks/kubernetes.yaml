@@ -1,0 +1,44 @@
+---
+- name: Install Homebrew packages
+  hosts: localhost
+  gather_facts: false
+  become: false
+
+  vars:
+    brew_tap_packages:
+      - "siderolabs/tap"
+      - "fluxcd/tap"
+      - "int128/kubelogin"
+    brew_packages:
+      - "talosctl"
+      - "kubectl"
+      - "flux"
+      - "argo"
+      - "kubelogin"
+      - "helm"
+
+  pre_tasks:
+    - name: Ensure Homebrew is installed
+      homebrew:
+        state: present
+
+    - name: Update Homebrew
+      homebrew:
+        update_homebrew: true
+
+  tasks:
+    - name: Installing Homebrew Cask Packages
+      homebrew_tap:
+        name: "{{ item }}"
+        state: present
+      with_items: "{{ brew_tap_packages }}"
+      register: result
+      until: result is successful
+
+    - name: Installing Homebrew Packages
+      homebrew:
+        name: "{{ item }}"
+        state: present
+      with_items: "{{ brew_packages }}"
+      register: result
+      until: result is successful
