@@ -1,0 +1,33 @@
+- name: Install base packages for coder-playbooks
+  hosts: localhost
+  gather_facts: false
+  become: false
+
+  vars:
+    retries: 3
+
+  tasks:
+    - name: Check if Homebrew binary exists
+      stat:
+        path: /home/linuxbrew/.linuxbrew/bin/brew
+      register: homebrew_binary_check
+
+    - name: Install Homebrew if not found
+      shell: |
+        NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      register: install_result
+      when: not homebrew_binary_check.stat.exists
+      until: install_result.rc == 0
+      retries: "{{ retries }}"
+
+    - name: Evaluate Homebrew shellenv if binary exists
+      shell: |
+        eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+      args:
+        executable: /bin/bash
+      when: homebrew_binary_check.stat.exists
+
+    - name: Update Homebrew
+      homebrew:
+        update_homebrew: true
+      when: homebrew_binary_check.stat.exists

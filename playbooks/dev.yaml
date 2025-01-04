@@ -5,17 +5,9 @@
   become: false
 
   vars:
-    brew_tap_packages:
-      - "siderolabs/tap"
-      - "fluxcd/tap"
-      - "int128/kubelogin"
+    brew_tap_packages: []
     brew_packages:
-      - "talosctl"
-      - "kubectl"
-      - "flux"
-      - "argo"
-      - "kubelogin"
-      - "helm"
+      - "zsh"
 
   tasks:
     - name: Installing Homebrew Cask Packages
