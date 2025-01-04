@@ -24,7 +24,7 @@
       ignore_errors: true
 
     - name: Install Homebrew if not found
-      command: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      command: NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
       when: homebrew_check.failed
 
     - name: Update Homebrew
