@@ -18,13 +18,20 @@
       - "helm"
 
   pre_tasks:
-    - name: Ensure Homebrew is installed
-      homebrew:
-        state: present
+    - name: Check if Homebrew is installed
+      command: brew --version
+      register: homebrew_check
+      ignore_errors: true
+
+    - name: Install Homebrew if not found
+      command: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      when: homebrew_check.failed
 
     - name: Update Homebrew
       homebrew:
         update_homebrew: true
+      when: not homebrew_check.failed
+
 
   tasks:
     - name: Installing Homebrew Cask Packages

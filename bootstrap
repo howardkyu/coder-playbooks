@@ -70,14 +70,12 @@ function get_linux_distro() {
 }
 
 function initialize_os_linux() {
-    # Install brew
-    NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+    :
 }
 
 function initialize_os_ubuntu() {
-    # Install brew's Ubuntu dependencies
-    sudo apt-get install -y build-essential
+    sudo apt install -y pipx
+    pipx ensurepath
 }
 
 function initialize_os_env() {
@@ -103,15 +101,14 @@ function initialize_os_env() {
     fi
 }
 
+function install_ansible() {
+    pipx install --include-deps ansible
+}
+
 function clone_repo() {
     echo "Cloning repository from branch ${BRANCH_NAME}..."
     rm -rf "${CODER_PLAYBOOKS_PATH}"
     git clone --branch "${BRANCH_NAME}" "${CODER_PLAYBOOKS_REPO}" "${CODER_PLAYBOOKS_PATH}"
-}
-
-function install_brew_deps() {
-    echo "Installing brew dependencies..."
-    brew install ansible
 }
 
 function validate_playbooks() {
@@ -155,7 +152,7 @@ function main() {
     clone_repo
     validate_playbooks "${PLAYBOOKS[@]}"
     initialize_os_env
-    install_brew_deps
+    install_ansible
     execute_playbooks "${PLAYBOOKS[@]}"
 }
 
