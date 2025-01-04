@@ -76,6 +76,7 @@ function initialize_os_linux() {
 function initialize_os_ubuntu() {
     sudo apt install -y pipx
     pipx ensurepath
+    exec "${SHELL}"
 }
 
 function initialize_os_env() {
