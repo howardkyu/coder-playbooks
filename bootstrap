@@ -76,7 +76,7 @@ function initialize_os_linux() {
 function initialize_os_ubuntu() {
     sudo apt install -y pipx
     pipx ensurepath
-    exec "${SHELL}"
+    export PATH="${PATH}:${HOME}/.local/bin"
 }
 
 function initialize_os_env() {
