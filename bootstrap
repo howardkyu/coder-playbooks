@@ -131,18 +131,25 @@ function validate_playbooks() {
 }
 
 function execute_playbooks() {
-    local playbooks=("$@")
+    local playbooks=("base" "$@") # Always include "base" as the first playbook
 
     if [ ${#playbooks[@]} -eq 0 ]; then
         echo "No playbooks provided. Skipping playbook execution."
-        return
+        return 0
     fi
 
     for playbook in "${playbooks[@]}"; do
         local full_path="${CODER_PLAYBOOKS_PATH}/playbooks/${playbook}.yaml"
         echo "Executing playbook: ${full_path}"
         ansible-playbook "${full_path}"
+        if [ $? -ne 0 ]; then
+            echo "Error: Playbook '${playbook}' failed."
+            return 1 # Exit the function with an error
+        fi
     done
+
+    echo "All playbooks executed successfully."
+    return 0
 }
 
 # Main script logic
